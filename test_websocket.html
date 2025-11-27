@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test Client</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin-bottom: 10px;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .status.connected {
+            background: #10b981;
+        }
+        
+        .status.disconnected {
+            background: #ef4444;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            color: #374151;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        .control-group input,
+        .control-group select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #059669;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .chat-area {
+            display: flex;
+            flex-direction: column;
+            height: 600px;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 14px;
+            font-weight: 600;
+            color: #6b7280;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+        }
+        
+        .tab-content.active {
+            display: flex;
+        }
+        
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .message .time {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-bottom: 5px;
+        }
+        
+        .message .event {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .message .content {
+            color: #374151;
+            word-wrap: break-word;
+        }
+        
+        .message.sent {
+            background: #dbeafe;
+            border-left: 3px solid #3b82f6;
+        }
+        
+        .message.received {
+            background: #d1fae5;
+            border-left: 3px solid #10b981;
+        }
+        
+        .message.system {
+            background: #fef3c7;
+            border-left: 3px solid #f59e0b;
+        }
+        
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .input-area input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #d1d5db;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-card .label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+        
+        .room-list {
+            list-style: none;
+            margin-top: 10px;
+        }
+        
+        .room-item {
+            padding: 8px 12px;
+            background: white;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+        
+        .room-item .badge {
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔌 WebSocket Test Client</h1>
+            <div id="connection-status" class="status disconnected">Disconnected</div>
+            <div style="margin-top: 10px; font-size: 14px;">
+                Client ID: <span id="client-id">Not connected</span>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="sidebar">
+                <h3>Connection</h3>
+                <div class="control-group">
+                    <label>WebSocket URL</label>
+                    <input type="text" id="ws-url" value="ws://localhost:8080" placeholder="ws://localhost:8080">
+                </div>
+                
+                <button id="connect-btn" class="btn btn-primary">Connect</button>
+                <button id="disconnect-btn" class="btn btn-danger" disabled>Disconnect</button>
+                
+                <h3 style="margin-top: 30px;">Rooms</h3>
+                <div class="control-group">
+                    <label>Room Name</label>
+                    <input type="text" id="room-name" value="general" placeholder="Enter room name">
+                </div>
+                <button id="join-room-btn" class="btn btn-success" disabled>Join Room</button>
+                <button id="leave-room-btn" class="btn btn-danger" disabled>Leave Room</button>
+                
+                <ul id="room-list" class="room-list"></ul>
+                
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="value" id="sent-count">0</div>
+                        <div class="label">Sent</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="value" id="received-count">0</div>
+                        <div class="label">Received</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="value" id="uptime">0s</div>
+                        <div class="label">Uptime</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-area">
+                <div class="tabs">
+                    <button class="tab active" data-tab="simple">Simple Messages</button>
+                    <button class="tab" data-tab="broadcast">Broadcast</button>
+                    <button class="tab" data-tab="rooms">Room Chat</button>
+                    <button class="tab" data-tab="logs">Logs</button>
+                </div>
+                
+                <div class="tab-content active" id="simple-tab">
+                    <div class="messages" id="simple-messages"></div>
+                    <div class="input-area">
+                        <input type="text" id="simple-input" placeholder="Type a message..." disabled>
+                        <button id="simple-send-btn" class="btn btn-primary" style="width: auto; padding: 10px 30px;" disabled>Send</button>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="broadcast-tab">
+                    <div class="messages" id="broadcast-messages"></div>
+                    <div class="input-area">
+                        <input type="text" id="broadcast-input" placeholder="Type a broadcast message..." disabled>
+                        <button id="broadcast-send-btn" class="btn btn-primary" style="width: auto; padding: 10px 30px;" disabled>Broadcast</button>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="rooms-tab">
+                    <div class="messages" id="rooms-messages"></div>
+                    <div class="input-area">
+                        <input type="text" id="rooms-input" placeholder="Type a room message..." disabled>
+                        <button id="rooms-send-btn" class="btn btn-primary" style="width: auto; padding: 10px 30px;" disabled>Send to Room</button>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="logs-tab">
+                    <div class="messages" id="logs-messages"></div>
+                    <button id="clear-logs-btn" class="btn btn-danger" style="width: auto; padding: 10px 30px;">Clear Logs</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="websocket_client.js"></script>
+</body>
+</html>
